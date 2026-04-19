@@ -9,6 +9,7 @@ class ItemCategory(str, Enum):
     RENEWAL = "Renewal"
     TRAVEL = "Travel"
     SOCIAL = "Social"
+    IMPORTANT_DATE = "Important Date"
 
 class DocumentType(str, Enum):
     PASSPORT = "Passport"
