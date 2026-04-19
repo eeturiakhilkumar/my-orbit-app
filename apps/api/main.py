@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlmodel import Session, create_engine, select, SQLModel
 from models import Item, User, ShoppingList, ShoppingItem, Document, ItemCreate
-from firebase_auth import get_current_user
+from auth import get_current_user
 
 # 1. Setup Database Connection (Using SQLite for easy start)
 sqlite_url = "sqlite:///./myorbit.db"
