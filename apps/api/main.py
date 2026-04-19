@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlmodel import Session, create_engine, select, SQLModel
 from models import Item, User, ShoppingList, ShoppingItem, Document, ItemCreate
+from firebase_auth import get_current_user
 
 # 1. Setup Database Connection (Using SQLite for easy start)
-sqlite_url = "sqlite:///./database.db"
+sqlite_url = "sqlite:///./myorbit.db"
 engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
 
 app = FastAPI()
@@ -22,19 +23,53 @@ def get_session():
 def read_root():
     return {"status": "Personal Ops API is running"}
 
-# 2. THE ROUTE: Create a new Item (Bill, Appt, etc.)
+# --- USER SYNC ---
+@app.post("/users/sync")
+async def sync_user(
+    uid: str = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    # Check if user already exists in our local DB
+    statement = select(User).where(User.id == uid)
+    existing_user = session.exec(statement).first()
+
+    if not existing_user:
+        # If they are new, create them!
+        # Note: Placeholder email. Frontend will eventually provide real data.
+        new_user = User(id=uid, email=f"{uid}@example.com")
+        session.add(new_user)
+        session.commit()
+        return {"message": "User created in local DB"}
+
+    return {"message": "User already exists"}
+
+# --- SECURE ITEMS ---
+
 @app.post("/items/", response_model=Item)
-def create_item(item_data: ItemCreate, session: Session = Depends(get_session)):
-    # In a real app, we'd verify the Firebase token here first
+def create_item(
+    item_data: ItemCreate,
+    uid: str = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    # Security check: Ensure the item's user_id matches the authenticated user
+    if item_data.user_id != uid:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only create items for your own user account"
+        )
+
     item = Item.model_validate(item_data)
     session.add(item)
     session.commit()
     session.refresh(item)
     return item
 
-# 3. THE ROUTE: Get all items for a specific user
-@app.get("/items/{user_id}", response_model=list[Item])
-def read_items(user_id: str, session: Session = Depends(get_session)):
-    statement = select(Item).where(Item.user_id == user_id)
+@app.get("/items/me", response_model=list[Item])
+def read_my_items(
+    uid: str = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    # This query ensures user A can NEVER see user B's bills
+    statement = select(Item).where(Item.user_id == uid)
     results = session.exec(statement).all()
     return results
