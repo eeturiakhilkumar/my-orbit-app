@@ -7,7 +7,8 @@ class ItemCategory(str, Enum):
     BILL = "Bill"
     APPOINTMENT = "Appointment"
     RENEWAL = "Renewal"
-    IMPORTANT_DATE = "Important Date"
+    TRAVEL = "Travel"
+    SOCIAL = "Social"
 
 class DocumentType(str, Enum):
     PASSPORT = "Passport"
@@ -41,13 +42,17 @@ class User(SQLModel, table=True):
 
 class ItemBase(SQLModel):
     title: str = Field(index=True)
+    description: Optional[str] = None
     category: ItemCategory
     due_date: datetime
-    description: Optional[str] = None
     is_completed: bool = False
     priority: int = Field(default=1) # 1: Low, 2: Med, 3: High
-    amount: Optional[float] = None # For Bills
-    location: Optional[str] = None # For Appointments
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Optional fields for specific categories
+    amount: Optional[float] = None     # For Bills
+    location: Optional[str] = None   # For Appointments
+    link: Optional[str] = None       # For Travel/Documents
 
 class ItemCreate(ItemBase):
     user_id: str
