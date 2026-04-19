@@ -45,3 +45,6 @@ __pycache__/
 *.py[cod]
 *.class
 .python-version
+
+# Firebase Admin SDK
+apps/api/my-orbit-app-f2a73-firebase-adminsdk.json
