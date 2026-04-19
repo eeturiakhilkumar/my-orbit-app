@@ -1,24 +1,26 @@
 'use client';
 
 import React from 'react';
-import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
-import 'firebaseui/dist/firebaseui.css';
-import { EmailAuthProvider, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '../lib/firebase';
-
-const uiConfig = {
-  // Popup signin flow rather than redirect flow.
-  signInFlow: 'popup',
-  // Redirect to / after sign in is successful. Alternatively you can provide a callbacks.signInSuccessWithAuthResult function.
-  signInSuccessUrl: '/',
-  // We will display Google and Email as auth providers.
-  signInOptions: [
-    GoogleAuthProvider.PROVIDER_ID,
-    EmailAuthProvider.PROVIDER_ID,
-  ],
-};
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../lib/firebase";
+import api from "../lib/api";
 
 export default function LoginPage() {
+  const handleLogin = async () => {
+    try {
+      // 1. Login to Firebase
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log("Logged into Firebase:", result.user.displayName);
+
+      // 2. Sync with FastAPI (This triggers the 'sync_user' route we wrote)
+      await api.post("/users/sync");
+
+      alert("System Sync Complete! Welcome to Vantage.");
+    } catch (error) {
+      console.error("Login failed", error);
+    }
+  };
+
   return (
     <div style={{
       display: 'flex',
@@ -30,7 +32,20 @@ export default function LoginPage() {
     }}>
       <h1>My Orbit Login</h1>
       <p>Please sign-in:</p>
-      <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={auth} />
+      <button
+        onClick={handleLogin}
+        style={{
+          padding: '10px 20px',
+          fontSize: '16px',
+          cursor: 'pointer',
+          backgroundColor: '#4285F4',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px'
+        }}
+      >
+        Sign in with Google
+      </button>
     </div>
   );
 }
