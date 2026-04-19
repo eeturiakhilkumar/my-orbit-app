@@ -1,0 +1,11 @@
+{
+  "name": "@repo/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "./.venv/bin/uvicorn main:app --reload",
+    "start": "./.venv/bin/uvicorn main:app",
+    "lint": "./.venv/bin/pylint *.py",
+    "type-check": "./.venv/bin/mypy *.py"
+  }
+}

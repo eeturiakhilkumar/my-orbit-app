@@ -1,0 +1,13 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "Personal Ops API"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "sqlmodel",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
