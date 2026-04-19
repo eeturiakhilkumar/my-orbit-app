@@ -2,6 +2,8 @@ import os
 import firebase_admin
 from firebase_admin import credentials, auth
 from typing import Optional
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Path to the service account key file
 # The memory suggests this file should be in apps/api/
@@ -39,3 +41,20 @@ def verify_token(id_token: str) -> Optional[dict]:
 
 # Initialize on module import
 initialize_firebase()
+
+security = HTTPBearer()
+
+async def get_current_user(res: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    """
+    FastAPI dependency that verifies the Firebase ID token in the Authorization header.
+    Returns the user's UID if valid, otherwise raises a 401 exception.
+    """
+    token = res.credentials
+    decoded_token = verify_token(token)
+    if not decoded_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return decoded_token['uid']
