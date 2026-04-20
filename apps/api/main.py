@@ -11,6 +11,11 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./myorbit.db")
 
 # Logic to handle the specific requirements of Cloud SQL vs Local SQLite
 if DATABASE_URL.startswith("postgresql"):
+    # Ensure we use pg8000 driver for Cloud SQL if not specified
+    if "pg8000" not in DATABASE_URL:
+        if "://" in DATABASE_URL:
+            DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+pg8000://")
+
     # Use 'pg8000' for Cloud SQL connections (pure-python driver)
     engine = create_engine(
         DATABASE_URL,

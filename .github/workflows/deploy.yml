@@ -71,10 +71,10 @@ jobs:
         with:
           service: my-orbit-api
           image: gcr.io/my-orbit-app-f2a73/my-orbit-api:${{ github.sha }}
-          region: asia-south1
+          region: us-central1
           # Note: Additional env vars and Cloud SQL connections should be managed in the Cloud Run console
           # or by updating this step with more parameters if needed.
           flags: |
-            --add-cloudsql-instances=my-orbit-app-f2a73:asia-south1:my-orbit-db
+            --add-cloudsql-instances=my-orbit-app-f2a73:us-central1:my-orbit-app
             --update-env-vars=DATABASE_URL=${{ secrets.DATABASE_URL }}
             --allow-unauthenticated
