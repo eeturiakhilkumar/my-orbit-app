@@ -15,8 +15,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -72,9 +70,9 @@ jobs:
           service: my-orbit-api
           image: gcr.io/my-orbit-app-f2a73/my-orbit-api:${{ github.sha }}
           region: us-central1
-          # Note: Additional env vars and Cloud SQL connections should be managed in the Cloud Run console
-          # or by updating this step with more parameters if needed.
+          env_vars: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            FIREBASE_SERVICE_ACCOUNT_JSON=${{ secrets.FIREBASE_SERVICE_ACCOUNT_MY_ORBIT_APP_F2A73 }}
           flags: |
             --add-cloudsql-instances=my-orbit-app-f2a73:us-central1:my-orbit-app
-            --update-env-vars=DATABASE_URL=${{ secrets.DATABASE_URL }}
             --allow-unauthenticated

@@ -1,3 +1,5 @@
+import os
+import json
 import firebase_admin
 from firebase_admin import credentials, auth
 from fastapi import Header, HTTPException, status
@@ -5,19 +7,27 @@ from fastapi import Header, HTTPException, status
 # This part initializes the connection to Firebase
 # It only needs to run once when the server starts
 try:
-    # Attempt to use the filename from user snippet
-    cred = credentials.Certificate("my-orbit-app-f2a73-firebase-adminsdk.json")
-    firebase_admin.initialize_app(cred)
+    # 1. Check for service account JSON in environment variable
+    firebase_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+    if firebase_json:
+        # Load credentials from the JSON string
+        cred_dict = json.loads(firebase_json)
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+    else:
+        # 2. Attempt to use the local filename if it exists
+        cred_file = "my-orbit-app-f2a73-firebase-adminsdk.json"
+        if os.path.exists(cred_file):
+            cred = credentials.Certificate(cred_file)
+            firebase_admin.initialize_app(cred)
+        else:
+            # 3. Fallback to default credentials (useful for Cloud Run environment)
+            firebase_admin.initialize_app()
 except ValueError:
     # This prevents errors if the app is already initialized
     pass
 except Exception as e:
-    # Fallback if the file doesn't exist, as per the user's manual step 3
     print(f"Warning: Firebase initialization failed: {e}")
-    try:
-        firebase_admin.initialize_app()
-    except Exception:
-        pass
 
 async def get_current_user(authorization: str = Header(None)):
     """
