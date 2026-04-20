@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, RecaptchaVerifier } from "firebase/auth";
 
 // Your web app's Firebase configuration
 // Replace these placeholders with your actual configuration from the Firebase Console
@@ -16,5 +16,19 @@ const firebaseConfig = {
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
+
+export const setupRecaptcha = (containerId: string) => {
+  if (!window.recaptchaVerifier) {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+      'size': 'invisible',
+      'callback': (response: any) => {
+        console.log("reCAPTCHA solved");
+      },
+      'expired-callback': () => {
+        console.log("reCAPTCHA expired");
+      }
+    });
+  }
+};
 
 export { app, auth, googleProvider };

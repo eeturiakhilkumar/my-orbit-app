@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   signInWithPopup,
-  RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult
 } from "firebase/auth";
-import { auth, googleProvider } from "../lib/firebase";
+import { auth, googleProvider, setupRecaptcha } from "../lib/firebase";
 import api from "../lib/api";
 import logo from "../assets/logo.png";
 import { LogIn, Phone, ShieldCheck, Mail } from 'lucide-react';
@@ -18,17 +17,7 @@ export default function Login() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response: any) => {
-          console.log("reCAPTCHA solved");
-        },
-        'expired-callback': () => {
-          console.log("reCAPTCHA expired");
-        }
-      });
-    }
+    setupRecaptcha('recaptcha-container');
   }, []);
 
   const handleGoogleSignIn = async () => {
@@ -79,6 +68,7 @@ export default function Login() {
     }
 
     try {
+      setupRecaptcha('recaptcha-container');
       const appVerifier = window.recaptchaVerifier;
       const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       setConfirmationResult(confirmation);
@@ -86,9 +76,8 @@ export default function Login() {
       console.error("Phone sign-in failed", err);
       setError("Failed to send OTP. Check your phone number format (e.g., +1234567890).");
       if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.render().then(widgetId => {
-          (window as any).grecaptcha.reset(widgetId);
-        });
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null as any;
       }
     } finally {
       setLoading(false);
@@ -255,6 +244,8 @@ export default function Login() {
     </div>
   );
 }
+
+import { RecaptchaVerifier } from "firebase/auth";
 
 // Add types for window
 declare global {
