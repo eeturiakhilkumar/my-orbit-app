@@ -1,0 +1,8 @@
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+sqlmodel==0.0.16
+psycopg2-binary==2.9.9
+cloud-sql-python-connector[pg8000]==1.9.0
+firebase-admin==6.4.0
+python-multipart==0.0.9
+pydantic-settings==2.2.1
