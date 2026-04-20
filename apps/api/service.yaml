@@ -1,0 +1,24 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: my-orbit-api
+  labels:
+    cloud.googleapis.com/location: asia-south1
+spec:
+  template:
+    metadata:
+      annotations:
+        # Link your FastAPI app to your Cloud SQL instance
+        # Replace project-id:region:instance-name with your actual Cloud SQL connection name
+        run.googleapis.com/cloudsql-instances: my-orbit-app-f2a73:asia-south1:my-orbit-db
+    spec:
+      containers:
+      - image: gcr.io/my-orbit-app-f2a73/my-orbit-api:latest
+        env:
+        - name: DATABASE_URL
+          # Replace [USER], [PASS], [DB_NAME] and connection name
+          value: "postgresql+pg8000://[USER]:[PASS]@/[DB_NAME]?unix_sock=/cloudsql/my-orbit-app-f2a73:asia-south1:my-orbit-db/.s.PGSQL.5432"
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: "1"
