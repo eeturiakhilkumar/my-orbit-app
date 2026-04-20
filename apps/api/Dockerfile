@@ -2,10 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
-# Note: we use pip here as it's the standard for python-slim
-COPY . .
-RUN pip install --no-cache-dir .
+# Copy only the backend requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Run the FastAPI app on port 8080 (Cloud Run's default)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Copy the backend code
+COPY . .
+
+# Force the container to use Python/Uvicorn, ignoring any Node.js detection
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
