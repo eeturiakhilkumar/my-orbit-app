@@ -1,11 +1,30 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlmodel import Session, create_engine, select, SQLModel
 from models import Item, User, ShoppingList, ShoppingItem, Document, ItemCreate
 from firebase_auth import get_current_user
 
-# 1. Setup Database Connection (Using SQLite for easy start)
-sqlite_url = "sqlite:///./myorbit.db"
-engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
+# 1. Setup Database Connection
+# Locally, this can be 'sqlite:///./myorbit.db'
+# In Cloud Run, it will be the PostgreSQL Unix Socket string
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./myorbit.db")
+
+# Logic to handle the specific requirements of Cloud SQL vs Local SQLite
+if DATABASE_URL.startswith("postgresql"):
+    # Ensure we use pg8000 driver for Cloud SQL if not specified
+    if "pg8000" not in DATABASE_URL:
+        if "://" in DATABASE_URL:
+            DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+pg8000://")
+
+    # Use 'pg8000' for Cloud SQL connections (pure-python driver)
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"timeout": 30},
+        pool_recycle=1800,
+    )
+else:
+    # Fallback for local development
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
 app = FastAPI()
 

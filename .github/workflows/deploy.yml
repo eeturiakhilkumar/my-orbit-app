@@ -1,0 +1,80 @@
+name: Deploy to Firebase and Cloud Run
+
+on:
+  push:
+    branches:
+      - main  # Adjust this if your default branch is different
+
+jobs:
+  deploy_frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build Frontend
+        run: pnpm --filter web build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://api-placeholder.com' }}
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MY_ORBIT_APP_F2A73 }}
+          channelId: live
+          projectId: my-orbit-app-f2a73
+
+  deploy_backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker --quiet
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t gcr.io/my-orbit-app-f2a73/my-orbit-api:${{ github.sha }} ./apps/api
+          docker tag gcr.io/my-orbit-app-f2a73/my-orbit-api:${{ github.sha }} gcr.io/my-orbit-app-f2a73/my-orbit-api:latest
+          docker push gcr.io/my-orbit-app-f2a73/my-orbit-api:${{ github.sha }}
+          docker push gcr.io/my-orbit-app-f2a73/my-orbit-api:latest
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: my-orbit-api
+          image: gcr.io/my-orbit-app-f2a73/my-orbit-api:${{ github.sha }}
+          region: us-central1
+          # Note: Additional env vars and Cloud SQL connections should be managed in the Cloud Run console
+          # or by updating this step with more parameters if needed.
+          flags: |
+            --add-cloudsql-instances=my-orbit-app-f2a73:us-central1:my-orbit-app
+            --update-env-vars=DATABASE_URL=${{ secrets.DATABASE_URL }}
+            --allow-unauthenticated

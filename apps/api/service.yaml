@@ -1,0 +1,22 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: my-orbit-api
+  labels:
+    cloud.googleapis.com/location: us-central1
+spec:
+  template:
+    metadata:
+      annotations:
+        # Link your FastAPI app to your Cloud SQL instance
+        run.googleapis.com/cloudsql-instances: my-orbit-app-f2a73:us-central1:my-orbit-app
+    spec:
+      containers:
+      - image: gcr.io/my-orbit-app-f2a73/my-orbit-api:latest
+        env:
+        - name: DATABASE_URL
+          value: "YOUR_DATABASE_URL_HERE"
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: "1"
