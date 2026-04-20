@@ -1,16 +1,18 @@
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 import { auth } from './firebase';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  baseURL: (import.meta as any).env.VITE_API_URL || 'http://localhost:8000',
 });
 
 // Interceptor to add the Bearer token automatically
-api.interceptors.request.use(async (config) => {
+api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const user = auth.currentUser;
   if (user) {
     const token = await user.getIdToken();
-    config.headers.Authorization = `Bearer ${token}`;
+    if (config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 }, (error) => {
