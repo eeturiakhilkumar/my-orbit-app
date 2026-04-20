@@ -12,7 +12,7 @@ spec:
         run.googleapis.com/cloudsql-instances: my-orbit-app-f2a73:us-central1:my-orbit-app
     spec:
       containers:
-      - image: gcr.io/my-orbit-app-f2a73/my-orbit-api:latest
+      - image: us-central1-docker.pkg.dev/my-orbit-app-f2a73/cloud-run-source-deploy/my-orbit-api:latest
         env:
         - name: DATABASE_URL
           value: "YOUR_DATABASE_URL_HERE"
