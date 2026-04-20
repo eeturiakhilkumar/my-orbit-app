@@ -3,7 +3,8 @@ name: Deploy to Firebase and Cloud Run
 on:
   push:
     branches:
-      - main  # Adjust this if your default branch is different
+      - main
+  pull_request:
 
 jobs:
   deploy_frontend:
@@ -35,11 +36,12 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MY_ORBIT_APP_F2A73 }}
-          channelId: live
+          channelId: ${{ github.event_name == 'pull_request' && 'preview' || 'live' }}
           projectId: my-orbit-app-f2a73
 
   deploy_backend:
     name: Deploy Backend
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
