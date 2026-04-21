@@ -27,15 +27,22 @@ const originalWindowLocation = window.location;
 describe('Login Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    delete (window as any).location;
-    window.location = { ...originalWindowLocation, href: '' } as any;
+    Object.defineProperty(window, 'location', {
+      value: { ...originalWindowLocation, href: '' },
+      writable: true,
+      configurable: true
+    });
     delete (window as any).recaptchaVerifier;
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterAll(() => {
-    window.location = originalWindowLocation;
+    Object.defineProperty(window, 'location', {
+      value: originalWindowLocation,
+      writable: true,
+      configurable: true
+    });
   });
 
   describe('Google Sign In', () => {
@@ -184,7 +191,8 @@ describe('Login Component', () => {
       render(<Login />);
       // 0 followed by 10 digits
       fireEvent.change(screen.getByLabelText(/Phone Number/i), { target: { value: '01234567890' } });
-      // Force form submit since button could be disabled
+      // Because validatePhone expects exact 10 digits or starting with +, 01234567890 is 11 digits, which makes the button disabled.
+      // Let's force form submit since the button might be disabled.
       fireEvent.submit(screen.getByLabelText(/Phone Number/i).closest('form')!);
 
       await waitFor(() => {

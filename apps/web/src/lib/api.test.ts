@@ -14,7 +14,7 @@ describe('api interceptor', () => {
   });
 
   it('should not add Authorization header if no user', async () => {
-    auth.currentUser = null;
+    Object.defineProperty(auth, 'currentUser', { value: null, writable: true });
 
     // Trigger interceptor
     const interceptor = (api.interceptors.request as any).handlers[0].fulfilled;
@@ -26,7 +26,7 @@ describe('api interceptor', () => {
 
   it('should add Authorization header if user exists', async () => {
     const mockGetIdToken = vi.fn().mockResolvedValue('mock-token');
-    auth.currentUser = { getIdToken: mockGetIdToken } as any;
+    Object.defineProperty(auth, 'currentUser', { value: { getIdToken: mockGetIdToken }, writable: true });
 
     const interceptor = (api.interceptors.request as any).handlers[0].fulfilled;
     const config = { headers: {} };
@@ -37,7 +37,7 @@ describe('api interceptor', () => {
 
   it('should handle request with no headers defined', async () => {
     const mockGetIdToken = vi.fn().mockResolvedValue('mock-token');
-    auth.currentUser = { getIdToken: mockGetIdToken } as any;
+    Object.defineProperty(auth, 'currentUser', { value: { getIdToken: mockGetIdToken }, writable: true });
 
     const interceptor = (api.interceptors.request as any).handlers[0].fulfilled;
     const config = {};

@@ -22,13 +22,23 @@ const originalWindowLocation = window.location;
 describe('Onboarding Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    delete (window as any).location;
-    window.location = { ...originalWindowLocation, href: '' } as any;
+    Object.defineProperty(window, 'location', {
+      value: { ...originalWindowLocation, href: '' },
+      writable: true,
+      configurable: true
+    });
     vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Clear currentUser mock default
+    Object.defineProperty(auth, 'currentUser', { value: null, writable: true, configurable: true });
   });
 
   afterAll(() => {
-    window.location = originalWindowLocation;
+    Object.defineProperty(window, 'location', {
+      value: originalWindowLocation,
+      writable: true,
+      configurable: true
+    });
   });
 
   it('renders loading state initially', () => {
@@ -52,7 +62,7 @@ describe('Onboarding Component', () => {
   });
 
   it('uses auth currentUser display name fallback if api display name is empty', async () => {
-    (auth as any).currentUser = { displayName: 'Auth Name' };
+    Object.defineProperty(auth, 'currentUser', { value: { displayName: 'Auth Name' }, writable: true, configurable: true });
     (api.get as any).mockResolvedValue({
       data: { email: 'test@example.com', phone_number: '+1234567890', display_name: null }
     });
@@ -137,7 +147,7 @@ describe('Onboarding Component', () => {
   });
 
   it('covers empty response data defaults (email and phone)', async () => {
-    (auth as any).currentUser = { displayName: null }; // no auth display name
+    Object.defineProperty(auth, 'currentUser', { value: { displayName: null }, writable: true, configurable: true });
     (api.get as any).mockResolvedValue({
       data: { email: null, phone_number: undefined, display_name: null }
     });

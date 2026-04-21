@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Dashboard from './Dashboard';
 import { auth } from '../lib/firebase';
@@ -15,19 +15,30 @@ const originalWindowLocation = window.location;
 describe('Dashboard Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    delete (window as any).location;
-    window.location = { ...originalWindowLocation, href: '' } as any;
+    Object.defineProperty(window, 'location', {
+      value: { ...originalWindowLocation, href: '' },
+      writable: true,
+      configurable: true
+    });
 
     // Default mock user
-    (auth as any).currentUser = {
-      displayName: 'Test User',
-      email: 'test@example.com',
-      phoneNumber: null,
-    };
+    Object.defineProperty(auth, 'currentUser', {
+      value: {
+        displayName: 'Test User',
+        email: 'test@example.com',
+        phoneNumber: null,
+      },
+      writable: true,
+      configurable: true
+    });
   });
 
   afterAll(() => {
-    window.location = originalWindowLocation;
+    Object.defineProperty(window, 'location', {
+      value: originalWindowLocation,
+      writable: true,
+      configurable: true
+    });
   });
 
   it('renders default Overview tab content', () => {
@@ -123,18 +134,22 @@ describe('Dashboard Component', () => {
   });
 
   it('renders correctly without user info (fallback values)', () => {
-    (auth as any).currentUser = null;
+    Object.defineProperty(auth, 'currentUser', { value: null, writable: true, configurable: true });
     render(<Dashboard />);
     expect(screen.getByText('Welcome back, User!')).toBeInTheDocument();
     expect(screen.getByText('U')).toBeInTheDocument(); // The avatar initial
   });
 
   it('renders correctly with phone user', () => {
-    (auth as any).currentUser = {
-      displayName: null,
-      email: null,
-      phoneNumber: '+1234567890'
-    };
+    Object.defineProperty(auth, 'currentUser', {
+      value: {
+        displayName: null,
+        email: null,
+        phoneNumber: '+1234567890'
+      },
+      writable: true,
+      configurable: true
+    });
     render(<Dashboard />);
     expect(screen.getByText('+1234567890')).toBeInTheDocument();
   });
