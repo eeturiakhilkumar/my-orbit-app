@@ -67,10 +67,37 @@ export default function Login() {
       return;
     }
 
+    // Validation and Formatting
+    let formattedPhone = phoneNumber.trim();
+    // Remove all non-digit characters except '+'
+    formattedPhone = formattedPhone.replace(/[^\d+]/g, "");
+
+    if (formattedPhone.startsWith("0")) {
+      formattedPhone = formattedPhone.substring(1);
+    }
+
+    if (!formattedPhone.startsWith("+")) {
+      // If it doesn't start with +, check if it's 10 digits
+      if (formattedPhone.length === 10) {
+        formattedPhone = `+91${formattedPhone}`;
+      } else {
+        setError("Please enter a valid 10-digit mobile number or include country code (e.g. +91 9876543210).");
+        setLoading(false);
+        return;
+      }
+    } else {
+      // It has a +, check if it has enough digits (minimum 7-15 is standard, but we'll check for reasonable length)
+      if (formattedPhone.length < 8) {
+        setError("Phone number is too short. Please include country code and 10 digits.");
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       setupRecaptcha('recaptcha-container');
       const appVerifier = window.recaptchaVerifier;
-      const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
       setConfirmationResult(confirmation);
     } catch (err: any) {
       console.error("Phone sign-in failed", err);
