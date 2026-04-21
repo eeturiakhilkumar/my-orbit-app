@@ -49,8 +49,9 @@ jobs:
 
   deploy_backend:
     name: Deploy Backend
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      SERVICE_NAME: ${{ github.ref == 'refs/heads/main' && 'my-orbit-api' || format('my-orbit-api-pr-{0}', github.event.pull_request.number || github.run_id) }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -77,7 +78,7 @@ jobs:
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: my-orbit-api
+          service: ${{ env.SERVICE_NAME }}
           image: us-central1-docker.pkg.dev/my-orbit-app-f2a73/cloud-run-source-deploy/my-orbit-api:${{ github.sha }}
           region: us-central1
           env_vars: |
