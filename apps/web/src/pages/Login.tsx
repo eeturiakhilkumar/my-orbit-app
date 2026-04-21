@@ -45,15 +45,30 @@ export default function Login() {
           });
           window.location.href = "/onboarding";
         } else {
-          throw err;
+          console.error("Backend sync failed:", err);
+          setError(`Backend sync failed: ${err.message || "Unknown error"}. Please try again.`);
         }
       }
     } catch (error: any) {
-      console.error("Login failed", error);
-      setError("Google sign-in failed. Please try again.");
+      console.error("Google Login failed", error);
+      setError(`Google Login failed: ${error.message || "Please check your Firebase configuration."}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  const validatePhone = (num: string) => {
+    const digits = num.replace(/\D/g, "");
+    return digits.length === 10;
+  };
+
+  const formatPhone = (num: string) => {
+    let formatted = num.trim().replace(/[^\d+]/g, "");
+    if (formatted.startsWith("0")) formatted = formatted.substring(1);
+    if (!formatted.startsWith("+") && formatted.length === 10) {
+      formatted = `+91${formatted}`;
+    }
+    return formatted;
   };
 
   const onSignInSubmit = async (e: React.FormEvent) => {
@@ -61,37 +76,12 @@ export default function Login() {
     setError("");
     setLoading(true);
 
-    if (!phoneNumber) {
-      setError("Please enter a phone number.");
+    const formattedPhone = formatPhone(phoneNumber);
+
+    if (!formattedPhone.startsWith("+") || formattedPhone.length < 10) {
+      setError("Please enter a valid 10-digit mobile number.");
       setLoading(false);
       return;
-    }
-
-    // Validation and Formatting
-    let formattedPhone = phoneNumber.trim();
-    // Remove all non-digit characters except '+'
-    formattedPhone = formattedPhone.replace(/[^\d+]/g, "");
-
-    if (formattedPhone.startsWith("0")) {
-      formattedPhone = formattedPhone.substring(1);
-    }
-
-    if (!formattedPhone.startsWith("+")) {
-      // If it doesn't start with +, check if it's 10 digits
-      if (formattedPhone.length === 10) {
-        formattedPhone = `+91${formattedPhone}`;
-      } else {
-        setError("Please enter a valid 10-digit mobile number or include country code (e.g. +91 9876543210).");
-        setLoading(false);
-        return;
-      }
-    } else {
-      // It has a +, check if it has enough digits (minimum 7-15 is standard, but we'll check for reasonable length)
-      if (formattedPhone.length < 8) {
-        setError("Phone number is too short. Please include country code and 10 digits.");
-        setLoading(false);
-        return;
-      }
     }
 
     try {
@@ -142,12 +132,13 @@ export default function Login() {
           });
           window.location.href = "/onboarding";
         } else {
-          throw err;
+          console.error("Backend sync failed:", err);
+          setError(`Backend sync failed: ${err.message}. Please try again.`);
         }
       }
     } catch (err: any) {
       console.error("OTP verification failed", err);
-      setError("Invalid verification code. Please try again.");
+      setError(`Verification failed: ${err.message || "Invalid code. Please try again."}`);
     } finally {
       setLoading(false);
     }
@@ -191,8 +182,8 @@ export default function Login() {
             </div>
             <button
               type="submit"
-              disabled={loading}
-              className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
+              disabled={loading || !validatePhone(phoneNumber)}
+              className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               {loading ? "Sending..." : "Send OTP"}
             </button>
