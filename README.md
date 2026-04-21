@@ -81,9 +81,33 @@ pnpm run check-types
 ```
 
 ### Unit Tests
-Currently, tests can be run using standard tools in their respective directories:
-- **Frontend**: `pnpm --filter web test` (if configured)
-- **Backend**: `pytest` in `apps/api`
+Both the frontend and backend have comprehensive unit tests achieving 100% coverage.
+
+**Frontend (React/Vitest)**
+- **Framework**: Vitest + React Testing Library + jsdom.
+- **Run Tests**:
+  ```bash
+  cd apps/web
+  pnpm vitest run
+  ```
+- **View Coverage**:
+  ```bash
+  cd apps/web
+  pnpm vitest run --coverage
+  ```
+
+**Backend (Python/pytest)**
+- **Framework**: pytest + httpx + pytest-cov.
+- **Run Tests**:
+  ```bash
+  cd apps/api
+  pytest
+  ```
+- **View Coverage**:
+  ```bash
+  cd apps/api
+  pytest --cov=. --cov-report=term-missing
+  ```
 
 ---
 
