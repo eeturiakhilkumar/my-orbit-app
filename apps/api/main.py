@@ -1,5 +1,7 @@
 import os
+from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, create_engine, select, SQLModel
 from models import Item, User, ShoppingList, ShoppingItem, Document, ItemCreate
 from firebase_auth import get_current_user
@@ -28,6 +30,23 @@ else:
 
 app = FastAPI()
 
+# Enable CORS
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://my-orbit-app-f2a73.web.app",
+    "https://my-orbit-app-f2a73.firebaseapp.com"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_origin_regex=r"https://my-orbit-app-f2a73--.*\.web\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Create tables on startup
 @app.on_event("startup")
 def on_startup():
@@ -43,8 +62,18 @@ def read_root():
     return {"status": "Personal Ops API is running"}
 
 # --- USER SYNC ---
+from typing import Optional
+from pydantic import BaseModel
+
+class UserSyncRequest(BaseModel):
+    email: Optional[str] = None
+    phone_number: Optional[str] = None
+    display_name: Optional[str] = None
+    photo_url: Optional[str] = None
+
 @app.post("/users/sync")
 async def sync_user(
+    user_data: UserSyncRequest,
     uid: str = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -54,13 +83,45 @@ async def sync_user(
 
     if not existing_user:
         # If they are new, create them!
-        # Note: Placeholder email. Frontend will eventually provide real data.
-        new_user = User(id=uid, email=f"{uid}@example.com")
+        new_user = User(
+            id=uid,
+            email=user_data.email,
+            phone_number=user_data.phone_number,
+            display_name=user_data.display_name,
+            photo_url=user_data.photo_url
+        )
         session.add(new_user)
         session.commit()
-        return {"message": "User created in local DB"}
+        session.refresh(new_user)
+        return {"message": "User created", "user": new_user}
+    else:
+        # Update existing user details if provided
+        if user_data.email:
+            existing_user.email = user_data.email
+        if user_data.phone_number:
+            existing_user.phone_number = user_data.phone_number
+        if user_data.display_name:
+            existing_user.display_name = user_data.display_name
+        if user_data.photo_url:
+            existing_user.photo_url = user_data.photo_url
 
-    return {"message": "User already exists"}
+        existing_user.last_login = datetime.utcnow()
+
+        session.add(existing_user)
+        session.commit()
+        session.refresh(existing_user)
+        return {"message": "User updated", "user": existing_user}
+
+@app.get("/users/me", response_model=User)
+async def get_me(
+    uid: str = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    statement = select(User).where(User.id == uid)
+    user = session.exec(statement).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 # --- SECURE ITEMS ---
 

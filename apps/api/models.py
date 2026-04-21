@@ -21,7 +21,8 @@ class User(SQLModel, table=True):
     id: str = Field(primary_key=True, index=True)
 
     # Basic Info
-    email: str = Field(unique=True, index=True)
+    email: Optional[str] = Field(default=None, unique=True, index=True)
+    phone_number: Optional[str] = Field(default=None, unique=True, index=True)
     display_name: Optional[str] = None
     photo_url: Optional[str] = None # Sync this from Firebase/Google login
 

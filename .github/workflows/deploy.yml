@@ -2,13 +2,16 @@ name: Deploy to Firebase and Cloud Run
 
 on:
   push:
-    branches:
-      - main  # Adjust this if your default branch is different
+  pull_request:
 
 jobs:
   deploy_frontend:
     name: Deploy Frontend
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -29,18 +32,26 @@ jobs:
         run: pnpm --filter web build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://api-placeholder.com' }}
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MY_ORBIT_APP_F2A73 }}
-          channelId: live
+          channelId: ${{ github.ref == 'refs/heads/main' && 'live' || github.head_ref || github.ref_name }}
           projectId: my-orbit-app-f2a73
 
   deploy_backend:
     name: Deploy Backend
     runs-on: ubuntu-latest
+    env:
+      SERVICE_NAME: ${{ github.ref == 'refs/heads/main' && 'my-orbit-api' || format('my-orbit-api-pr-{0}', github.event.pull_request.number || github.run_id) }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -67,7 +78,7 @@ jobs:
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: my-orbit-api
+          service: ${{ env.SERVICE_NAME }}
           image: us-central1-docker.pkg.dev/my-orbit-app-f2a73/cloud-run-source-deploy/my-orbit-api:${{ github.sha }}
           region: us-central1
           env_vars: |
