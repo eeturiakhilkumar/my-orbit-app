@@ -22,11 +22,14 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
 
       - name: Install Dependencies
         run: pnpm install
+
+      - name: Run Frontend Tests
+        run: pnpm --filter web test
 
       - name: Build Frontend
         run: pnpm --filter web build
@@ -44,7 +47,7 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MY_ORBIT_APP_F2A73 }}
-          channelId: ${{ github.ref == 'refs/heads/main' && 'live' || github.head_ref || github.ref_name }}
+          channelId: ${{ github.ref == 'refs/heads/main' && 'live' || 'preview' }}
           projectId: my-orbit-app-f2a73
 
   deploy_backend:
@@ -55,6 +58,22 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Backend Test Dependencies
+        working-directory: ./apps/api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-mock "httpx<0.28" "fastapi>=0.110.0"
+
+      - name: Run Backend Tests
+        working-directory: ./apps/api
+        run: pytest test_main.py test_firebase_auth.py test_init_db.py test_models.py --cov=main --cov=firebase_auth --cov=init_db --cov=models
 
       - name: Google Auth
         id: auth
