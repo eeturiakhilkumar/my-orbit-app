@@ -2,8 +2,6 @@ name: Deploy to Firebase and Cloud Run
 
 on:
   push:
-    branches:
-      - main
   pull_request:
 
 jobs:
@@ -46,7 +44,7 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MY_ORBIT_APP_F2A73 }}
-          channelId: ${{ github.event_name == 'pull_request' && 'preview' || 'live' }}
+          channelId: ${{ github.ref == 'refs/heads/main' && 'live' || github.head_ref || github.ref_name }}
           projectId: my-orbit-app-f2a73
 
   deploy_backend:
