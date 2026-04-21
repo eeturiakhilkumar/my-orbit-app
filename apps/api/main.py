@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, create_engine, select, SQLModel
 from models import Item, User, ShoppingList, ShoppingItem, Document, ItemCreate
 from firebase_auth import get_current_user
@@ -28,6 +29,22 @@ else:
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
 app = FastAPI()
+
+# Enable CORS
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://my-orbit-app-f2a73.web.app",
+    "https://my-orbit-app-f2a73.firebaseapp.com"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Create tables on startup
 @app.on_event("startup")
