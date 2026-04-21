@@ -39,44 +39,54 @@ async def test_get_current_user_invalid_token(mock_verify):
 # Testing initialization block (this runs on import, so we need to reload it with different env vars)
 def test_init_with_env_var(monkeypatch):
     monkeypatch.setenv("FIREBASE_SERVICE_ACCOUNT_JSON", json.dumps({"type": "service_account"}))
-    with patch("firebase_auth.credentials.Certificate") as mock_cert:
-        with patch("firebase_auth.firebase_admin.initialize_app") as mock_init:
-            import importlib
-            importlib.reload(firebase_auth)
-            mock_cert.assert_called_once()
-            mock_init.assert_called_once()
+    with patch("os.path.exists", return_value=False):
+        with patch("firebase_auth.firebase_admin._apps", {}):
+            with patch("firebase_auth.credentials.Certificate") as mock_cert:
+                with patch("firebase_auth.firebase_admin.initialize_app") as mock_init:
+                    import importlib
+                    importlib.reload(firebase_auth)
+                    mock_cert.assert_called_once()
+                    mock_init.assert_called_once()
 
 def test_init_with_local_file(monkeypatch):
     monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
     with patch("os.path.exists", return_value=True):
-        with patch("firebase_auth.credentials.Certificate") as mock_cert:
-            with patch("firebase_auth.firebase_admin.initialize_app") as mock_init:
-                import importlib
-                importlib.reload(firebase_auth)
-                mock_cert.assert_called_once_with("my-orbit-app-f2a73-firebase-adminsdk.json")
-                mock_init.assert_called_once()
+        with patch("firebase_auth.firebase_admin._apps", {}):
+            with patch("firebase_auth.credentials.Certificate") as mock_cert:
+                with patch("firebase_auth.firebase_admin.initialize_app") as mock_init:
+                    import importlib
+                    importlib.reload(firebase_auth)
+                    mock_cert.assert_called_once_with(firebase_auth.cred_path)
+                    mock_init.assert_called_once()
 
 def test_init_with_fallback(monkeypatch):
     monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
     with patch("os.path.exists", return_value=False):
-        with patch("firebase_auth.firebase_admin.initialize_app") as mock_init:
-            import importlib
-            importlib.reload(firebase_auth)
-            mock_init.assert_called_once_with()
-
-def test_init_value_error(monkeypatch):
-    monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
-    with patch("os.path.exists", return_value=False):
-        with patch("firebase_auth.firebase_admin.initialize_app", side_effect=ValueError("App already exists")):
-            import importlib
-            # Should not raise
-            importlib.reload(firebase_auth)
-
-def test_init_other_error(monkeypatch):
-    monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
-    with patch("os.path.exists", return_value=False):
-        with patch("firebase_auth.firebase_admin.initialize_app", side_effect=Exception("Other error")):
+        with patch("firebase_auth.firebase_admin._apps", {}):
             with patch("builtins.print") as mock_print:
                 import importlib
                 importlib.reload(firebase_auth)
-                mock_print.assert_called_once_with("Warning: Firebase initialization failed: Other error")
+                mock_print.assert_called_once_with("Warning: Firebase service account JSON not found.")
+
+def test_init_value_error(monkeypatch):
+    monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
+    with patch("os.path.exists", return_value=True):
+        with patch("firebase_auth.firebase_admin._apps", {}):
+            with patch("firebase_auth.credentials.Certificate"):
+                with patch("firebase_auth.firebase_admin.initialize_app", side_effect=ValueError("App already exists")):
+                    import importlib
+                    # Should print warning
+                    with patch("builtins.print") as mock_print:
+                        importlib.reload(firebase_auth)
+                        mock_print.assert_called_once_with("Firebase initialization failed: App already exists")
+
+def test_init_other_error(monkeypatch):
+    monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
+    with patch("os.path.exists", return_value=True):
+        with patch("firebase_auth.firebase_admin._apps", {}):
+            with patch("firebase_auth.credentials.Certificate"):
+                with patch("firebase_auth.firebase_admin.initialize_app", side_effect=Exception("Other error")):
+                    with patch("builtins.print") as mock_print:
+                        import importlib
+                        importlib.reload(firebase_auth)
+                        mock_print.assert_called_once_with("Firebase initialization failed: Other error")

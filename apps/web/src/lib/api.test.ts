@@ -32,6 +32,7 @@ describe('api interceptor', () => {
     const config = { headers: {} };
     const newConfig = await interceptor(config);
 
+    expect(mockGetIdToken).toHaveBeenCalledWith(true);
     expect(newConfig.headers.Authorization).toBe('Bearer mock-token');
   });
 

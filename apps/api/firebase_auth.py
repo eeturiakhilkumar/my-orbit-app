@@ -4,30 +4,28 @@ import firebase_admin
 from firebase_admin import credentials, auth
 from fastapi import Header, HTTPException, status
 
-# This part initializes the connection to Firebase
-# It only needs to run once when the server starts
-try:
-    # 1. Check for service account JSON in environment variable
-    firebase_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
-    if firebase_json:
-        # Load credentials from the JSON string
-        cred_dict = json.loads(firebase_json)
-        cred = credentials.Certificate(cred_dict)
-        firebase_admin.initialize_app(cred)
-    else:
-        # 2. Attempt to use the local filename if it exists
-        cred_file = "my-orbit-app-f2a73-firebase-adminsdk.json"
-        if os.path.exists(cred_file):
-            cred = credentials.Certificate(cred_file)
+# Get the absolute path to the credential file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+cred_path = os.path.join(base_dir, "my-orbit-app-f2a73-firebase-adminsdk.json")
+
+# Initialize Firebase Admin SDK only if it hasn't been initialized
+if not firebase_admin._apps:
+    try:
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
+            print("Firebase Admin SDK initialized successfully from file.")
         else:
-            # 3. Fallback to default credentials (useful for Cloud Run environment)
-            firebase_admin.initialize_app()
-except ValueError:
-    # This prevents errors if the app is already initialized
-    pass
-except Exception as e:
-    print(f"Warning: Firebase initialization failed: {e}")
+            firebase_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+            if firebase_json:
+                cred_dict = json.loads(firebase_json)
+                cred = credentials.Certificate(cred_dict)
+                firebase_admin.initialize_app(cred)
+                print("Firebase Admin SDK initialized successfully from env var.")
+            else:
+                print("Warning: Firebase service account JSON not found.")
+    except Exception as e:
+        print(f"Firebase initialization failed: {e}")
 
 async def get_current_user(authorization: str = Header(None)):
     """
