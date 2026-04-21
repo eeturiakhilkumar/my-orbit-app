@@ -2,7 +2,7 @@ import axios, { InternalAxiosRequestConfig } from 'axios';
 import { auth } from './firebase';
 
 const api = axios.create({
-  baseURL: (import.meta as any).env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
 });
 
 // Interceptor to add the Bearer token automatically

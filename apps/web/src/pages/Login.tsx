@@ -24,11 +24,13 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
+      console.log("Starting Google Sign-In...");
       const result = await signInWithPopup(auth, googleProvider);
-      console.log("Logged into Firebase:", result.user.displayName);
+      console.log("Firebase Login Successful:", result.user.email);
 
       // Check if user is complete in backend
       try {
+        console.log("Syncing with backend...");
         const response = await api.get("/users/me");
         if (response.data.phone_number && response.data.email) {
           window.location.href = "/dashboard";
@@ -58,13 +60,21 @@ export default function Login() {
   };
 
   const validatePhone = (num: string) => {
-    const digits = num.replace(/\D/g, "");
-    return digits.length === 10;
+    const trimmed = num.trim();
+    if (trimmed.startsWith("+")) {
+      // If it starts with +, ensure it has a reasonable number of digits (minimum 7 for country code + number)
+      const digitsOnly = trimmed.replace(/\D/g, "");
+      return digitsOnly.length >= 7 && digitsOnly.length <= 15;
+    }
+    // Otherwise, assume it's a 10-digit number
+    const digitsOnly = trimmed.replace(/\D/g, "");
+    return digitsOnly.length === 10;
   };
 
   const formatPhone = (num: string) => {
     let formatted = num.trim().replace(/[^\d+]/g, "");
     if (formatted.startsWith("0")) formatted = formatted.substring(1);
+    // If no country code and is 10 digits, add +91
     if (!formatted.startsWith("+") && formatted.length === 10) {
       formatted = `+91${formatted}`;
     }
@@ -114,10 +124,11 @@ export default function Login() {
 
     try {
       const result = await confirmationResult.confirm(otp);
-      console.log("Phone login success:", result.user.uid);
+      console.log("Phone Login Successful:", result.user.phoneNumber);
 
       // Check user status
       try {
+        console.log("Syncing with backend...");
         const response = await api.get("/users/me");
         if (response.data.phone_number && response.data.email) {
           window.location.href = "/dashboard";
