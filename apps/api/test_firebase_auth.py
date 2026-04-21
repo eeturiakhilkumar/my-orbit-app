@@ -48,6 +48,16 @@ def test_init_with_env_var(monkeypatch):
                     mock_cert.assert_called_once()
                     mock_init.assert_called_once()
 
+def test_init_with_env_var_fallback(monkeypatch):
+    monkeypatch.setenv("FIREBASE_SERVICE_ACCOUNT_JSON", json.dumps({"type": "service_account"}))
+    with patch("os.path.exists", return_value=True):
+        with patch("firebase_auth.firebase_admin._apps", {}):
+            with patch("firebase_auth.credentials.Certificate", side_effect=[ValueError("Invalid file"), MagicMock()]):
+                with patch("firebase_auth.firebase_admin.initialize_app") as mock_init:
+                    import importlib
+                    importlib.reload(firebase_auth)
+                    mock_init.assert_called_once()
+
 def test_init_with_local_file(monkeypatch):
     monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
     with patch("os.path.exists", return_value=True):
@@ -66,7 +76,8 @@ def test_init_with_fallback(monkeypatch):
             with patch("builtins.print") as mock_print:
                 import importlib
                 importlib.reload(firebase_auth)
-                mock_print.assert_called_once_with("Warning: Firebase service account JSON not found.")
+                mock_print.assert_any_call("Warning: Firebase service account JSON not found.")
+                mock_print.assert_any_call("Firebase initialization failed: no valid credentials provided.")
 
 def test_init_value_error(monkeypatch):
     monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
@@ -78,7 +89,9 @@ def test_init_value_error(monkeypatch):
                     # Should print warning
                     with patch("builtins.print") as mock_print:
                         importlib.reload(firebase_auth)
-                        mock_print.assert_called_once_with("Firebase initialization failed: App already exists")
+                        mock_print.assert_any_call("Warning: Failed to initialize from file: App already exists")
+                        mock_print.assert_any_call("Warning: Firebase service account JSON not found.")
+                        mock_print.assert_any_call("Firebase initialization failed: no valid credentials provided.")
 
 def test_init_other_error(monkeypatch):
     monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
@@ -89,4 +102,6 @@ def test_init_other_error(monkeypatch):
                     with patch("builtins.print") as mock_print:
                         import importlib
                         importlib.reload(firebase_auth)
-                        mock_print.assert_called_once_with("Firebase initialization failed: Other error")
+                        mock_print.assert_any_call("Warning: Failed to initialize from file: Other error")
+                        mock_print.assert_any_call("Warning: Firebase service account JSON not found.")
+                        mock_print.assert_any_call("Firebase initialization failed: no valid credentials provided.")

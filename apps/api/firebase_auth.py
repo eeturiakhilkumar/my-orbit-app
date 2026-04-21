@@ -10,22 +10,34 @@ cred_path = os.path.join(base_dir, "my-orbit-app-f2a73-firebase-adminsdk.json")
 
 # Initialize Firebase Admin SDK only if it hasn't been initialized
 if not firebase_admin._apps:
-    try:
-        if os.path.exists(cred_path):
+    initialized = False
+    if os.path.exists(cred_path):
+        try:
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
             print("Firebase Admin SDK initialized successfully from file.")
-        else:
-            firebase_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
-            if firebase_json:
+            initialized = True
+        except ValueError as e:
+            print(f"Warning: Failed to initialize from file: {e}")
+        except Exception as e:
+            print(f"Warning: Failed to initialize from file: {e}")
+
+    if not initialized:
+        firebase_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+        if firebase_json:
+            try:
                 cred_dict = json.loads(firebase_json)
                 cred = credentials.Certificate(cred_dict)
                 firebase_admin.initialize_app(cred)
                 print("Firebase Admin SDK initialized successfully from env var.")
-            else:
-                print("Warning: Firebase service account JSON not found.")
-    except Exception as e:
-        print(f"Firebase initialization failed: {e}")
+                initialized = True
+            except Exception as e:
+                print(f"Warning: Failed to initialize from env var: {e}")
+        else:
+            print("Warning: Firebase service account JSON not found.")
+
+    if not initialized:
+         print(f"Firebase initialization failed: no valid credentials provided.")
 
 async def get_current_user(authorization: str = Header(None)):
     """
