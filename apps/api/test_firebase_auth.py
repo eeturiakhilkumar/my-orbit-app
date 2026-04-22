@@ -90,13 +90,14 @@ def test_init_with_local_file(monkeypatch):
 
 def test_init_with_fallback(monkeypatch):
     monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project-123")
     with patch("os.path.exists", return_value=False):
         with patch("firebase_auth.firebase_admin._apps", {}):
             with patch("firebase_auth.firebase_admin.initialize_app") as mock_init:
                 with patch("builtins.print") as mock_print:
                     import importlib
                     importlib.reload(firebase_auth)
-                    mock_init.assert_called_once()
+                    mock_init.assert_called_once_with(options={'projectId': 'test-project-123'})
                     mock_print.assert_any_call("Firebase Admin SDK initialized successfully using default credentials.")
 
 def test_init_value_error(monkeypatch):
@@ -126,3 +127,44 @@ def test_init_other_error(monkeypatch):
                         import importlib
                         importlib.reload(firebase_auth)
                         mock_print.assert_any_call("Warning: Failed to initialize from secret mount: Other error")
+
+def test_init_local_file_error(monkeypatch):
+    monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
+    def mock_exists(path):
+        return path == firebase_auth.local_cred_path
+
+    with patch("os.path.exists", side_effect=mock_exists):
+        with patch("firebase_auth.firebase_admin._apps", {}):
+            with patch("firebase_auth.credentials.Certificate"):
+                with patch("firebase_auth.firebase_admin.initialize_app", side_effect=[Exception("Other error"), MagicMock()]):
+                    with patch("builtins.print") as mock_print:
+                        import importlib
+                        importlib.reload(firebase_auth)
+                        mock_print.assert_any_call("Warning: Failed to initialize from local file: Other error")
+
+def test_init_env_var_error(monkeypatch):
+    monkeypatch.setenv("FIREBASE_SERVICE_ACCOUNT_JSON", json.dumps({"type": "service_account"}))
+    def mock_exists(path):
+        return False
+
+    with patch("os.path.exists", side_effect=mock_exists):
+        with patch("firebase_auth.firebase_admin._apps", {}):
+            with patch("firebase_auth.credentials.Certificate"):
+                with patch("firebase_auth.firebase_admin.initialize_app", side_effect=[Exception("Other error"), MagicMock()]):
+                    with patch("builtins.print") as mock_print:
+                        import importlib
+                        importlib.reload(firebase_auth)
+                        mock_print.assert_any_call("Warning: Failed to initialize from env var: Other error")
+
+def test_init_fallback_error(monkeypatch):
+    monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
+    def mock_exists(path):
+        return False
+
+    with patch("os.path.exists", side_effect=mock_exists):
+        with patch("firebase_auth.firebase_admin._apps", {}):
+            with patch("firebase_auth.firebase_admin.initialize_app", side_effect=[Exception("Other error"), MagicMock()]):
+                with patch("builtins.print") as mock_print:
+                    import importlib
+                    importlib.reload(firebase_auth)
+                    mock_print.assert_any_call("Firebase initialization failed: Other error")
