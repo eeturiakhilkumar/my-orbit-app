@@ -48,3 +48,6 @@ __pycache__/
 
 # Firebase Admin SDK
 apps/api/my-orbit-app-f2a73-firebase-adminsdk.json
+
+.coverage
+.pytest_cache

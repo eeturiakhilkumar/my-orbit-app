@@ -1,0 +1,3 @@
+[run]
+omit =
+    migrate_db.py

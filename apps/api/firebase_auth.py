@@ -50,7 +50,8 @@ if not firebase_admin._apps:
     # 4. Fallback to default application credentials
     if not initialized:
         try:
-            firebase_admin.initialize_app()
+            project_id = os.getenv("FIREBASE_PROJECT_ID", "my-orbit-app-f2a73")
+            firebase_admin.initialize_app(options={'projectId': project_id})
             print("Firebase Admin SDK initialized successfully using default credentials.")
         except Exception as e:
             print(f"Firebase initialization failed: {e}")
